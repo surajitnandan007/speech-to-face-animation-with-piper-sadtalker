@@ -1,0 +1,15 @@
+{
+  "input": {
+    "audio_path": "C:/temp/input.wav",
+    "source_image_path": "C:/temp/source.jpg",
+    "options": {
+      "preprocess": "full",
+      "pose_style": 0,
+      "expression_scale": 1.0,
+      "size": 256,
+      "still_mode": true,
+      "enhancer": null
+    },
+    "return_video_base64": false
+  }
+}
