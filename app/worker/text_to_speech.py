@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -20,21 +21,36 @@ def synthesize_wav_from_text(
     config.piper_data_dir.mkdir(parents=True, exist_ok=True)
     config.piper_download_dir.mkdir(parents=True, exist_ok=True)
 
+    model_value = str(config.piper_voice)
     command = [
         "piper",
         "--model",
-        config.piper_voice,
-        "--data-dir",
-        str(config.piper_data_dir),
-        "--download-dir",
-        str(config.piper_download_dir),
-        "--output_file",
-        str(output_path),
+        model_value,
+        "--json-input",
     ]
+
+    # If the voice is an explicit .onnx file on the mounted volume, Piper can use
+    # it directly and does not need lookup/download directories.
+    if not model_value.lower().endswith(".onnx"):
+        command.extend(
+            [
+                "--data-dir",
+                str(config.piper_data_dir),
+                "--download-dir",
+                str(config.piper_download_dir),
+            ]
+        )
+
+    payload = json.dumps(
+        {
+            "text": clean_text,
+            "output_file": str(output_path),
+        }
+    )
 
     completed = subprocess.run(
         command,
-        input=clean_text,
+        input=f"{payload}\n",
         capture_output=True,
         text=True,
         check=False,
