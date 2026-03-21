@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import subprocess
 from pathlib import Path
 
@@ -26,7 +25,8 @@ def synthesize_wav_from_text(
         "piper",
         "--model",
         model_value,
-        "--json-input",
+        "--output_file",
+        str(output_path),
     ]
 
     # If the voice is an explicit .onnx file on the mounted volume, Piper can use
@@ -41,16 +41,9 @@ def synthesize_wav_from_text(
             ]
         )
 
-    payload = json.dumps(
-        {
-            "text": clean_text,
-            "output_file": str(output_path),
-        }
-    )
-
     completed = subprocess.run(
         command,
-        input=f"{payload}\n",
+        input=clean_text,
         capture_output=True,
         text=True,
         check=False,
