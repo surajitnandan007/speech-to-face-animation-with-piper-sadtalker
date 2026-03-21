@@ -115,6 +115,20 @@ class SadTalkerService:
                     "files before deploying this worker."
                 )
 
+        if self.config.default_source_image:
+            if not self.config.default_source_image.exists():
+                raise ConfigurationError(
+                    "DEFAULT_SOURCE_IMAGE was set but the file does not exist: "
+                    f"{self.config.default_source_image}"
+                )
+
+            if self.config.default_source_image.suffix.lower() not in ALLOWED_IMAGE_SUFFIXES:
+                supported = ", ".join(sorted(ALLOWED_IMAGE_SUFFIXES))
+                raise ConfigurationError(
+                    "DEFAULT_SOURCE_IMAGE must point to a supported image file. "
+                    f"Supported types are: {supported}"
+                )
+
     def _prepare_audio_file(self, source_path: Path, target_path: Path) -> Path:
         if not str(source_path):
             raise ValueError("Provide a .wav audio file before starting generation.")

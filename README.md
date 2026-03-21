@@ -22,7 +22,9 @@ Or one of these for `audio`:
 - `audio_base64`
 - `audio_path` for local testing
 
-Send one of these for `source_image` if you are not using `DEFAULT_SOURCE_IMAGE`:
+If `DEFAULT_SOURCE_IMAGE` points to a face image on your mounted Runpod volume, callers can omit the source image entirely.
+
+Send one of these for `source_image` only when you want to override the default face:
 
 - `source_image_url`
 - `source_image_base64`
@@ -70,7 +72,7 @@ The Dockerfile clones the SadTalker source repo, but it does not download model 
 
 That keeps the worker image compatible with your "scale to zero" billing goal, because you can avoid paid persistent volumes.
 
-The worker also uses `piper-tts` for text-to-speech. By default it uses the `en_US-lessac-medium` voice and downloads voice data the first time it is used. Override this with:
+The worker also uses `piper-tts` for text-to-speech. You can point `PIPER_VOICE` to a voice file on the mounted Runpod volume, for example `/runpod-volume/piper-voices/en_US-amy-medium.onnx`. Override this with:
 
 - `PIPER_VOICE`
 - `PIPER_DATA_DIR`
