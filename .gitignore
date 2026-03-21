@@ -1,2 +1,4 @@
 runpod_output/
 test_outputs/
+__pycache__/
+*.pyc

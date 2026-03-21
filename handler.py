@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 import runpod
@@ -9,6 +10,7 @@ from app.backend.exceptions import ConfigurationError, GenerationError
 from app.backend.models import GenerationOptions
 from app.backend.sadtalker_service import SadTalkerService
 from app.worker.io_utils import encode_file_to_base64, infer_suffix, materialize_input_file
+from app.worker.text_to_speech import synthesize_wav_from_text
 
 
 SERVICE = SadTalkerService(load_config())
@@ -26,18 +28,39 @@ def _parse_options(job_input: dict[str, Any]) -> GenerationOptions:
     )
 
 
-def handler(job: dict[str, Any]) -> dict[str, Any]:
-    job_input = job.get("input", {})
+def _materialize_audio(job_input: dict[str, Any]):
+    text_input = (job_input.get("text") or "").strip()
+    if text_input:
+        return synthesize_wav_from_text(
+            text=text_input,
+            output_path=SERVICE.config.upload_dir / "tts" / f"{uuid.uuid4().hex}.wav",
+            config=SERVICE.config,
+        )
 
-    audio_path = materialize_input_file(
+    return materialize_input_file(
         path_value=job_input.get("audio_path"),
         url_value=job_input.get("audio_url"),
         base64_value=job_input.get("audio_base64"),
         suffix=".wav",
         label="audio",
     )
+
+
+def handler(job: dict[str, Any]) -> dict[str, Any]:
+    job_input = job.get("input", {})
+
+    try:
+        audio_path = _materialize_audio(job_input)
+    except (RuntimeError, ValueError) as exc:
+        return {
+            "status": "error",
+            "message": str(exc),
+            "logs": "",
+            "setup": SERVICE.describe_setup(),
+        }
+
     if audio_path is None:
-        return {"error": "Provide audio_path, audio_url, or audio_base64."}
+        return {"error": "Provide text or audio_path, audio_url, or audio_base64."}
 
     source_image_path = materialize_input_file(
         path_value=job_input.get("source_image_path"),
@@ -81,4 +104,3 @@ def handler(job: dict[str, Any]) -> dict[str, Any]:
 
 
 runpod.serverless.start({"handler": handler})
-

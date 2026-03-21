@@ -1,6 +1,6 @@
 {
   "input": {
-    "audio_path": "C:/temp/input.wav",
+    "text": "Hello from the text to video SadTalker pipeline.",
     "source_image_path": "C:/temp/source.jpg",
     "options": {
       "preprocess": "full",

@@ -33,6 +33,9 @@ class SadTalkerService:
                 if self.config.default_source_image
                 else ""
             ),
+            "piper_voice": self.config.piper_voice,
+            "piper_data_dir": str(self.config.piper_data_dir),
+            "piper_download_dir": str(self.config.piper_download_dir),
             "upload_dir": str(self.config.upload_dir),
             "results_dir": str(self.config.results_dir),
         }

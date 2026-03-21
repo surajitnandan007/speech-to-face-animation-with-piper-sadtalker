@@ -39,6 +39,9 @@ class AppConfig:
     sadtalker_python_executable: str
     checkpoint_dir: Optional[Path]
     default_source_image: Optional[Path]
+    piper_voice: str
+    piper_data_dir: Path
+    piper_download_dir: Path
     upload_dir: Path
     results_dir: Path
 
@@ -56,6 +59,14 @@ def load_config() -> AppConfig:
         ),
         checkpoint_dir=_env_path("SADTALKER_CHECKPOINT_DIR"),
         default_source_image=_env_path("DEFAULT_SOURCE_IMAGE"),
+        piper_voice=_env_text("PIPER_VOICE", "en_US-lessac-medium"),
+        piper_data_dir=_env_path("PIPER_DATA_DIR", Path("/opt/piper/data"))
+        or Path("/opt/piper/data"),
+        piper_download_dir=_env_path(
+            "PIPER_DOWNLOAD_DIR",
+            Path("/opt/piper/downloads"),
+        )
+        or Path("/opt/piper/downloads"),
         upload_dir=_env_path("UPLOAD_DIR", base_storage / "uploads")
         or (base_storage / "uploads"),
         results_dir=_env_path("RESULTS_DIR", base_storage / "results")

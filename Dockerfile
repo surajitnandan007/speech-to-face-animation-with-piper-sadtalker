@@ -5,7 +5,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     APP_HOME=/app \
     SADTALKER_HOME=/opt/SadTalker \
-    MODEL_HOME=/opt/models
+    MODEL_HOME=/opt/models \
+    PIPER_HOME=/opt/piper
 
 WORKDIR ${APP_HOME}
 
@@ -41,6 +42,9 @@ RUN mkdir -p /app/storage/uploads /app/storage/results
 ENV SADTALKER_REPO_PATH=${SADTALKER_HOME} \
     SADTALKER_PYTHON_EXECUTABLE=python \
     SADTALKER_CHECKPOINT_DIR=${MODEL_HOME}/checkpoints \
+    PIPER_VOICE=en_US-lessac-medium \
+    PIPER_DATA_DIR=${PIPER_HOME}/data \
+    PIPER_DOWNLOAD_DIR=${PIPER_HOME}/downloads \
     UPLOAD_DIR=/app/storage/uploads \
     RESULTS_DIR=/app/storage/results
 

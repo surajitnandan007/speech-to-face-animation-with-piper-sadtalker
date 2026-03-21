@@ -5,8 +5,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$EndpointId,
 
-    [Parameter(Mandatory = $true)]
     [string]$AudioPath,
+
+    [string]$Text,
 
     [string]$ImagePath,
 
@@ -35,7 +36,11 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-if (-not (Test-Path $AudioPath)) {
+if (-not $AudioPath -and -not $Text) {
+    throw "Provide either -AudioPath or -Text."
+}
+
+if ($AudioPath -and -not (Test-Path $AudioPath)) {
     throw "Audio file not found: $AudioPath"
 }
 
@@ -45,9 +50,7 @@ if ($ImagePath -and -not (Test-Path $ImagePath)) {
 
 New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
-$audioBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Resolve-Path $AudioPath)))
 $bodyInput = @{
-    audio_base64 = $audioBase64
     options = @{
         preprocess = $Preprocess
         pose_style = $PoseStyle
@@ -57,6 +60,14 @@ $bodyInput = @{
         enhancer = $(if ($Enhancer -eq "none") { $null } else { $Enhancer })
     }
     return_video_base64 = [bool]$ReturnVideoBase64
+}
+
+if ($Text) {
+    $bodyInput["text"] = $Text
+}
+else {
+    $audioBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Resolve-Path $AudioPath)))
+    $bodyInput["audio_base64"] = $audioBase64
 }
 
 if ($ImagePath) {
