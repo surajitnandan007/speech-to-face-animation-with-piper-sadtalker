@@ -16,6 +16,18 @@ from app.worker.text_to_speech import synthesize_wav_from_text
 SERVICE = SadTalkerService(load_config())
 
 
+def _as_bool(value: Any, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
 def _parse_options(job_input: dict[str, Any]) -> GenerationOptions:
     options_input = job_input.get("options") or {}
     return GenerationOptions(
@@ -60,27 +72,47 @@ def handler(job: dict[str, Any]) -> dict[str, Any]:
         }
 
     if audio_path is None:
-        return {"error": "Provide text or audio_path, audio_url, or audio_base64."}
+        return {
+            "status": "error",
+            "message": "Provide text or audio_path, audio_url, or audio_base64.",
+            "logs": "",
+            "setup": SERVICE.describe_setup(),
+        }
 
-    source_image_path = materialize_input_file(
-        path_value=job_input.get("source_image_path"),
-        url_value=job_input.get("source_image_url"),
-        base64_value=job_input.get("source_image_base64"),
-        suffix=infer_suffix(
-            path_value=job_input.get("source_image_path"),
-            url_value=job_input.get("source_image_url"),
-            fallback_suffix=".png",
-        ),
-        label="source_image",
-    )
+    render_video = _as_bool(job_input.get("render_video"), default=True)
+    return_audio_base64 = _as_bool(job_input.get("return_audio_base64"), default=False)
+
+    if not render_video:
+        response: dict[str, Any] = {
+            "status": "completed",
+            "job_id": uuid.uuid4().hex[:12],
+            "audio_path": str(audio_path),
+            "logs": "Piper audio generated successfully.",
+        }
+
+        if return_audio_base64:
+            response["audio_base64"] = encode_file_to_base64(audio_path)
+
+        return response
 
     try:
+        source_image_path = materialize_input_file(
+            path_value=job_input.get("source_image_path"),
+            url_value=job_input.get("source_image_url"),
+            base64_value=job_input.get("source_image_base64"),
+            suffix=infer_suffix(
+                path_value=job_input.get("source_image_path"),
+                url_value=job_input.get("source_image_url"),
+                fallback_suffix=".png",
+            ),
+            label="source_image",
+        )
         result = SERVICE.generate(
             audio_file=audio_path,
             source_image=source_image_path,
             options=_parse_options(job_input),
         )
-    except (ConfigurationError, GenerationError, ValueError) as exc:
+    except (ConfigurationError, GenerationError, RuntimeError, ValueError) as exc:
         return {
             "status": "error",
             "message": str(exc),
@@ -97,8 +129,11 @@ def handler(job: dict[str, Any]) -> dict[str, Any]:
         "logs": result.logs,
     }
 
-    if bool(job_input.get("return_video_base64", False)):
+    if _as_bool(job_input.get("return_video_base64"), default=False):
         response["video_base64"] = encode_file_to_base64(result.video_path)
+
+    if return_audio_base64:
+        response["audio_base64"] = encode_file_to_base64(result.audio_path)
 
     return response
 
